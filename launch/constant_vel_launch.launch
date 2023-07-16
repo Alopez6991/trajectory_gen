@@ -1,0 +1,6 @@
+<launch>
+    <arg name="trajectory_file" default="$(find trajectory_gen)/trajectories/csv_trajectories.yaml" />
+    <node name="trajectory_generator" pkg="trajectory_gen" type="constant_vel_node.py" clear_params="true" output="screen">
+        <rosparam file="$(arg trajectory_file)"/>
+    </node>
+</launch>
