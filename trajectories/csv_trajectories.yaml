@@ -1,3 +1,4 @@
-# waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/your_csv_file.csv"
-waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/square_path.csv"
+# waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/linear_trajectory_constant_heading__edege_only_01.csv"
+waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/linear_trajectory_edege_only_02.csv"
+# waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/square_path.csv"
 test_var: 20.0

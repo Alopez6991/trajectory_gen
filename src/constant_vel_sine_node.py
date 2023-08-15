@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 # from clean_desired_state import setpoint_publisher_time_dependent
-from constant_vel import send_desired_vel
+from constant_vel_sine import send_desired_vel
 # from get_setpoints import setpoint_publisher
 rospy.init_node("RPY_publishing_node",anonymous=False)
 vel_publisher = send_desired_vel()
