@@ -1,0 +1,3 @@
+<launch>
+    <node name="record" pkg="rosbag" type="record" args="-o 'linear' /camera/color/image_raw /RPY /Vout_2d /camera/color/image_raw /camera/depth/image_rect_raw /error_2D /error_3D /error_r /et/ned/pose /et/ned/pose_stamped /et/nwu/pose /desired_state /mavros/imu/data /mavros/imu/data_raw /mavros/local_position/pose /mavros/local_position/velocity_body /mavros/mocap/pose /mavros/setpoint_raw/local /mavros/vision_pose/pose /mocap/nwu/pose_stamped /optic_flow /optic_flow_mean_vx /optic_flow_mean_vy /target /trisonic /trisonica_body_level /trisonica_global /velocity /velocity/body_level_frame /velocity/camera_frame /velocity/ned"/>
+</launch>

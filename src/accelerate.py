@@ -23,8 +23,9 @@ class send_desired_vel:
         self._desired_state = rospy.Publisher("desired_state", DesiredState,queue_size=1)
         self._setpoint_raw_local_pub = rospy.Publisher("mavros/setpoint_raw/local", PositionTarget, queue_size=1)
         
-        # self.dt=.01
-        # rospy.Timer(rospy.Duration(self.dt), self.timer_callback)
+        #Timer callback
+        self.dt=.01
+        rospy.Timer(rospy.Duration(self.dt), self.timer_callback)
         
         # getting things from a yaml file
         self.waypoint_list = rospy.get_param("~waypoint_list")
@@ -43,6 +44,7 @@ class send_desired_vel:
         self.ty=float(self.go2points[self.I][1])
         self.tz=float(self.go2points[self.I][2])
         self.tyawD=float(self.go2points[self.I][3])
+        self.mode=float(self.go2points[self.I][4])
         self.eyawD=0
         self.eyawR=0
         self.ex=0
@@ -50,20 +52,23 @@ class send_desired_vel:
         self.ez=0
         self.en=np.array([0,0,0])
         self.en_2d=np.array([0,0])
-        self.V=1 #m/s
+        self.V=.5 #m/s
+        self.Vmin=.5 #m/s
+        self.Vmax= 1.5 #m/s
+        # self.V=1 #m/s
+        # self.V=1.5 #m/s
+        self.A=.2 #m/s^2
+        self.DT=.01 #sec
         self.Vout=np.array([0,0,0])
         self.Vout_2d=np.array([0,0])
-        self.kp_yaw=.1 #rads/s
+        self.kp_yaw=1 #rads/s
         self.yaw_rate=0
         self.er=100
-        self.thresh_hold=.25
-        self.thresh_hold_yaw=.1
+        self.thresh_hold=.5
+        self.thresh_hold_yaw=.5
         self.flag=0
         self.active = False
-        self.TRAVELING = 0
-        self.AT_WALL = 0
-        self.error_theta=0
-        self.L=5.5
+        self.dtt=0
 
         # Subscriber
         self._mocap_sub = rospy.Subscriber("/mavros/vision_pose/pose",PoseStamped,self.mocap_cb)
@@ -88,7 +93,34 @@ class send_desired_vel:
             self.flag=1
         else:
             self.flag=0
-            
+
+    def yaw_error_fnc(self,true_yaw, target_yaw):
+        error=math.atan2(math.sin(target_yaw-true_yaw),math.cos(target_yaw-true_yaw))
+        return error
+
+    def update_Vel(self,Vnow,A,mode,DT):
+        dt=DT
+        if mode ==0:
+            Vnew=self.Vmin
+        elif mode == -1:
+            Vnew=Vnow-A*dt*2
+            if Vnew <= self.Vmin:
+                Vnew=self.Vmin
+        else:
+            Vnew=Vnow+A*dt
+            if np.abs(Vnew) >= self.Vmax:
+                Vnew=1*self.Vmax
+        # print(Vnew,mode)
+        return Vnew
+
+    
+    def timer_callback(self,event):
+        self.V=self.update_Vel(self.V,self.A,self.mode,self.dt)
+        # print(self.V)
+        # print("target: ",self.tx,self.ty,self.tyawD)
+        self.dtt=self.dtt+self.dt
+        # print(self.dtt)
+
         
 
     def mocap_cb(self,mocap_state):
@@ -105,8 +137,10 @@ class send_desired_vel:
         self.ez=float(self.tz-mocap_state.pose.position.z)
         self.eyawD=float(self.tyawD-self.Yd)
         self.tyawR=np.deg2rad(self.tyawD)
-        self.eyawR=float(self.tyawR-self.Y)
-        
+
+        # yaw error 
+        # self.eyawR=float(self.tyawR-self.Y)
+        self.eyawR=self.yaw_error_fnc(self.Y,self.tyawR)
         #norm of the error 3d and 3d
         self.en = np.array([self.ex,self.ey,self.ez]) / np.linalg.norm(np.array([self.ex,self.ey,self.ez]))
         self.en_2d = np.array([self.ex,self.ey]) / np.linalg.norm(np.array([self.ex,self.ey]))
@@ -114,7 +148,12 @@ class send_desired_vel:
         #Unyawing the error
         Cyaw_2d=self.get_Cyaw_2d(self.Y)
         # ebln_2d=np.matmul(Cyaw_2d,self.en_2d)
-        # self.Vout_2d=self.V*self.en_2d
+        # self.V=self.update_Vel(self.V,self.A,self.mode,self.DT)
+        # print("V:",self.V)
+        print("V:",self.V)
+        print("target: ",self.tx,self.ty,self.tyawD)
+
+        self.Vout_2d=self.V*self.en_2d
         # print(self.Vout_2d)
 
         #Yaw rate
@@ -122,117 +161,28 @@ class send_desired_vel:
         # Print(RC call back)
         # print(self.flag)
         if self.active:
-            # # Update point
-            # self.er=np.sqrt(self.ex**2+self.ey**2+self.ez**2)
-            # if  mocap_state.pose.position.x>=3.55 or mocap_state.pose.position.x <= -3.55 or mocap_state.pose.position.y>=1.1 or mocap_state.pose.position.y<=-1.7 or (self.er <= self.thresh_hold and self.eyawR <= np.abs(self.thresh_hold_yaw)):
-            #     print("hit target or wall")
-            #     self.AT_WALL = 1
-            #     if  self.TRAVELING==1 :
-            #         self.I=self.I+1
-            #         if self.I >= len(self.go2points):
-            #             self.tx=float(self.go2points[-1][0])
-            #             self.ty=float(self.go2points[-1][1])
-            #             self.tz=float(self.go2points[-1][2])
-            #             self.tyaw=float(self.go2points[-1][3])
-            #             self.Vout_2d[0]=0.0
-            #             self.Vout_2d[1]=0.0
-            #             self.yaw_rate=0.0
-            #             print("all done")
-            #         else:
-            #             self.tx=float(self.go2points[self.I][0])
-            #             self.ty=float(self.go2points[self.I][1])
-            #             self.tz=float(self.go2points[self.I][2])
-            #             self.tyaw=float(self.go2points[self.I][3])
-            #             self.error_theta=np.arctan2(self.ty-mocap_state.pose.position.y,self.tx-mocap_state.pose.position.x)
-            #             print(self.error_theta)
-                        
-            #         self.TRAVELING = 0
-            # else:
-            #     self.AT_WALL = 0 
-            #     self.TRAVELING = 1
-            # print("I:",self.I)
-            # print("tx,ty:",self.tx,self.ty)
-            # self.Vout_2d=self.V*self.en_2d
-            # # if self.I == 0:
-            # #     self.Vout_2d=self.V*self.en_2d
-            # # else:
-            # #     seconds = rospy.get_time()
-            # #     Vtotal=np.matrix([[self.V*np.sin(seconds)],[np.abs(self.V*np.cos(seconds))]])
-            # #     theta = self.error_theta
-            # #     c, s = np.cos(theta), np.sin(theta)
-            # #     R = np.array(((c, -s), (s, c)))
-            # #     O=np.array(R*Vtotal)
-            # #     XR=O[0][0]
-            # #     YR=O[1][0]
-            # #     self.Vout_2d=[XR,YR]
-            # #     print("Vx,Vy: ",XR,YR)
-
-        # else:
-            switch_2_trav=False
+            # Update point
             self.er=np.sqrt(self.ex**2+self.ey**2+self.ez**2)
-            if self.I % 2==0:
-                outside=mocap_state.pose.position.x>=3.55
-            else:
-                outside=mocap_state.pose.position.x<=-3.55
-            # outside=mocap_state.pose.position.x>=3.55 or mocap_state.pose.position.x <= -3.55 or mocap_state.pose.position.y>=1.1 or mocap_state.pose.position.y<=-1.7 
-            if self.TRAVELING == 0 and outside:
-                self.TRAVELING=1
-                switch_2_trav=True
-                print("swithed to traveling")
-            elif self.TRAVELING == 1 and not outside:
-                self.TRAVELING=0
-                print("switched to not traveling")
-
-            if switch_2_trav or (self.er <= self.thresh_hold and self.eyawR <= np.abs(self.thresh_hold_yaw)):
-                if self.I < len(self.go2points)-1:
-                    #Increment waypoint
-                    self.I=self.I+1
-                    self.tx=float(self.go2points[self.I][0])
-                    self.ty=float(self.go2points[self.I][1])
-                    self.tz=float(self.go2points[self.I][2])
-                    self.tyaw=float(self.go2points[self.I][3])
-                    self.error_theta=np.arctan2(self.ty-mocap_state.pose.position.y,self.tx-mocap_state.pose.position.x)
-                    self.L=self.L-.5
-                    print("I: ",self.I)
-                    print("error_theta: ",self.error_theta)
-                    print("L: ",self.L)
-                elif self.I < len(self.go2points):
-                    #We're done - load final waypoint
-                    self.I=self.I+1
+            if self.er <= self.thresh_hold and self.eyawR <= np.abs(self.thresh_hold_yaw):
+                self.I=self.I+1
+                if self.I >= len(self.go2points):
                     self.tx=float(self.go2points[-1][0])
                     self.ty=float(self.go2points[-1][1])
                     self.tz=float(self.go2points[-1][2])
-                    self.tyaw=float(self.go2points[-1][3])
-                    # self.Vout_2d[0]=0.0
-                    # self.Vout_2d[1]=0.0
-                    # self.yaw_rate=0.0
+                    self.tyawD=float(self.go2points[-1][3])
+                    self.mode=float(self.go2points[-1][4])
+                    self.Vout_2d[0]=0.0
+                    self.Vout_2d[1]=0.0
+                    self.yaw_rate=0.0
                     print("all done")
+                else:
+                    self.tx=float(self.go2points[self.I][0])
+                    self.ty=float(self.go2points[self.I][1])
+                    self.tz=float(self.go2points[self.I][2])
+                    self.tyawD=float(self.go2points[self.I][3])
+                    self.mode=float(self.go2points[self.I][4])
 
-            # print("I:",self.I)
-                # print("tx,ty:",self.tx,self.ty)
-            # print("error_theta: ",self.error_theta)
-
-                # print("I:",self.I)
-                # print("tx,ty:",self.tx,self.ty)
-            # self.Vout_2d=self.V*self.en_2d
-            if self.I == 0:
-                self.Vout_2d=self.V*self.en_2d
-            else:
-                # print("im in")
-                # self.L=self.L-.5
-                seconds = rospy.get_time()
-                Vtotal=np.matrix([[np.abs(self.V*np.cos((self.L)*seconds))],[self.V*np.sin((self.L)*seconds)]])
-                theta = self.error_theta
-                c, s = np.cos(theta), np.sin(theta)
-                R = np.array(((c, -s), (s, c)))
-                O=np.array(R*Vtotal)
-                XR=O[0][0]
-                YR=O[1][0]
-                self.Vout_2d=[XR,YR]
-            # print("L:",self.L)
-                # print("Vx,Vy: ",XR,YR)
-                
-            
+            # elif mocap_state.pose.position.x >=3.6 or mocap_state.pose.position.x<=-3.6
 
 
 
