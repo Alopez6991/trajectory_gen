@@ -56,8 +56,8 @@ class send_desired_vel:
         self.kp_yaw=.1 #rads/s
         self.yaw_rate=0
         self.er=100
-        self.thresh_hold=.25
-        self.thresh_hold_yaw=.1
+        self.thresh_hold=.3
+        self.thresh_hold_yaw=.15
         self.flag=0
         self.active = False
         self.TRAVELING = 0

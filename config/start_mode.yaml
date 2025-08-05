@@ -1,0 +1,5 @@
+# config/start_mode.yaml
+use_terminal: False
+# flight_mode: 'position'
+flight_mode: 'velocity_global'
+# flight_mode: 'velocity_body'

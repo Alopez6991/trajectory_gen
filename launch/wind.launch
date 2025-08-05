@@ -1,0 +1,3 @@
+<launch>
+    <node name="record" pkg="rosbag" type="record" args="-o 'wind_walk' /trisonica /mavros/vision_pose/pose /mavros/imu/data"/>
+</launch>

@@ -1,5 +1,4 @@
-waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/linear_trajectory_edege_only_02.csv"
-# waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/acc_01.csv"
-# waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/back_and_forth_CH_01.csv"
-# waypoint_list: "/home/et/catkin_ws/src/trajectory_gen/trajectories/square_path.csv"
+waypoint_list: "/home/flybot2/catkin_ws/src/trajectory_gen/trajectories/trajectory_data_global_velocity_all_rect.csv"
+# waypoint_list: "/home/flybot2/catkin_ws/src/trajectory_gen/trajectories/C2C_01.csv"
+
 test_var: 20.0

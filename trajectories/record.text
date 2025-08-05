@@ -1,0 +1,1 @@
+rosbag record -o imu_test_velcro /mavros/imu/mag /mavros/local_position/accel /mavros/local_position/velocity_body /mavros/setpoint_raw/local /mavros/vision_pose/pose /mavros/local_position/velocity_local /trisonica /trisonica_body_level /trisonica_global /mavros/local_position/pose /mavros/rc/in /mavros/rc/out /mavros/imu/data /mavros/imu/data_raw /camera/color/image_raw

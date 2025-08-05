@@ -49,16 +49,16 @@ class send_desired_vel:
         self.ez=0
         self.en=np.array([0,0,0])
         self.en_2d=np.array([0,0])
-        # self.V=.5 #m/s
         self.V=1 #m/s
+        # self.V=0.75 #m/s
         # self.V=1.5 #m/s
         self.Vout=np.array([0,0,0])
         self.Vout_2d=np.array([0,0])
-        self.kp_yaw=1 #rads/s
+        self.kp_yaw=.5 #rads/s
         self.yaw_rate=0
         self.er=100
         self.thresh_hold=.25
-        self.thresh_hold_yaw=.1
+        self.thresh_hold_yaw=.4
         self.flag=0
         self.active = False
 
